@@ -1,0 +1,35 @@
+name: couple_meal_log
+description: "CoupleMealLog —— 情侣双人共享餐食记录（Flutter 原生安卓 App，微信云开发 / 腾讯 CloudBase 后端）"
+publish_to: 'none'
+version: 1.2.0+3
+
+environment:
+  # Dart 3.4+：使用记录（record）语法、switch 表达式等
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ===== 腾讯云开发 CloudBase Flutter SDK（文档型数据库 + 云存储 + 认证）=====
+  # 官方新版 SDK，支持 Dart 3；一行依赖即可使用 db / storage / auth 能力
+  cloudbase_flutter: ^1.2.2
+
+  # ===== 设备唯一标识（免注册身份凭证）=====
+  device_info_plus: ^13.3.0
+
+  # ===== 仅引入必要插件 =====
+  image_picker: ^1.1.2 # 调用相机拍照 / 从相册选图
+  path_provider: ^2.1.4 # 定位手机本地目录（CSV 导出、固定缓存位置）
+  shared_preferences: ^2.3.2 # 本地缓存（离线查看）、设备 ID 与昵称
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  # 使用 Material 图标
+  uses-material-design: true

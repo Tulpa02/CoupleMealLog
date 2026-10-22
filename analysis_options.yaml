@@ -1,0 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+  language:
+    strict-casts: false
+
+linter:
+  rules:
+    # 中文注释与文案较多，保持默认规则即可
+    avoid_print: true
