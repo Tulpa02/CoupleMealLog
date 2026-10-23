@@ -36,3 +36,7 @@ build-release.bat
 env.txt
 
 # 说明：环境 ID 通过 --dart-define=TCB_ENV_ID 注入，见 build-release.example.bat。
+
+# 图标生成脚本的源图与预览（体积较大，不提交）
+tools/assets/
+tools/icon_preview.png
