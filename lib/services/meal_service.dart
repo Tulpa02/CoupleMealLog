@@ -192,7 +192,9 @@ class MealService {
   ///
   /// 云存储图片只能用「fileID → 临时下载链接」的方式访问，链接会过期，
   /// 因此**每次读取都要重新换取**，不能复用数据库里存的旧链接。
-  /// 这里按 50 个一批调用 getDownloadUrls，减少请求次数。
+  ///
+  /// 先按 50 个一批换取（省请求），批里若有取不到的（例如伴侣的图片
+  /// 受云存储权限限制），再逐个重试一次，避免一条失败拖累整批。
   Future<void> _fillImageUrls(List<MealEntry> list) async {
     final indexes = <int>[];
     final fileIds = <String>[];
@@ -205,20 +207,37 @@ class MealService {
     }
     if (fileIds.isEmpty) return;
 
+    void apply(int idx, String? url) {
+      if (url == null || !url.startsWith('http')) return;
+      list[idx] = list[idx].copyWith(imageUrl: url);
+    }
+
     const batchSize = 50;
     for (var start = 0; start < fileIds.length; start += batchSize) {
       final end = (start + batchSize).clamp(0, fileIds.length);
       final chunk = fileIds.sublist(start, end);
+
+      // 1) 批量换取
+      var got = <String, String>{};
       try {
-        final urls = await TcbService.getTempFileURLs(chunk);
-        for (var k = 0; k < chunk.length; k++) {
-          final url = urls[chunk[k]];
-          if (url == null || !url.startsWith('http')) continue;
-          final idx = indexes[start + k];
-          list[idx] = list[idx].copyWith(imageUrl: url);
-        }
+        got = await TcbService.getTempFileURLs(chunk);
       } catch (e) {
-        debugPrint('批量获取图片链接失败：$e');
+        debugPrint('批量获取图片链接失败，改为逐个获取：$e');
+      }
+      for (var k = 0; k < chunk.length; k++) {
+        apply(indexes[start + k], got[chunk[k]]);
+      }
+
+      // 2) 批量里没拿到的，逐个再试一次
+      for (var k = 0; k < chunk.length; k++) {
+        final idx = indexes[start + k];
+        if (list[idx].imageUrl != null) continue;
+        try {
+          final url = await TcbService.getTempFileURL(chunk[k]);
+          apply(idx, url);
+        } catch (e) {
+          debugPrint('获取图片链接失败（${chunk[k]}）：${TcbService.friendlyError(e)}');
+        }
       }
     }
   }

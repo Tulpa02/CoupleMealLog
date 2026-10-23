@@ -71,7 +71,8 @@ class DailySummaryCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               '「我」记录 ${mine.count} 条 · 「$partnerName」记录 ${partner.count} 条',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+              style:
+                  theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
             ),
           ],
         ),
@@ -83,8 +84,7 @@ class DailySummaryCard extends StatelessWidget {
   Widget _header(String text, ThemeData theme) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         child: Text(text,
-            style: theme.textTheme.labelSmall,
-            textAlign: TextAlign.center),
+            style: theme.textTheme.labelSmall, textAlign: TextAlign.center),
       );
 
   /// 数据行
@@ -107,7 +107,9 @@ class DailySummaryCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: highlight ? theme.colorScheme.primary : Colors.orange.shade700,
+              color: highlight
+                  ? theme.colorScheme.primary
+                  : Colors.orange.shade700,
             ),
           ),
         ),

@@ -78,8 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
           FilledButton(
-            onPressed: () =>
-                Navigator.pop(ctx, ctrl.text.trim()),
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
             child: const Text('保存'),
           ),
         ],
@@ -180,8 +179,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('取消')),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('确定'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('确定'),
           ),
         ],
       ),
@@ -260,7 +259,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => FoodPresetsScreen(deviceId: widget.deviceId),
+                    builder: (_) =>
+                        FoodPresetsScreen(deviceId: widget.deviceId),
                   ),
                 ),
               ),
@@ -274,7 +274,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       )
                     : const Icon(Icons.file_download_outlined),
                 title: const Text('导出全部记录为 CSV'),
-                subtitle: const Text('保存到手机 Download/CoupleMealLog 目录，可用 Excel 打开'),
+                subtitle:
+                    const Text('保存到手机 Download/CoupleMealLog 目录，可用 Excel 打开'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: _exporting ? null : _exportCsv,
               ),
@@ -282,8 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.cleaning_services_outlined),
                 title: const Text('清除本地缓存'),
-                subtitle: Text(
-                    '当前占用 ${CacheService.readableSize(_cacheBytes)}，'
+                subtitle: Text('当前占用 ${CacheService.readableSize(_cacheBytes)}，'
                     '仅影响离线查看，不影响云端数据'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: _clearCache,

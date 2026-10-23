@@ -19,6 +19,7 @@ import '../../services/meal_service.dart';
 import '../../services/tcb_service.dart';
 import '../../utils/date_utils.dart';
 import 'food_search_screen.dart';
+import 'image_viewer_screen.dart';
 
 class AddMealScreen extends StatefulWidget {
   const AddMealScreen({
@@ -186,8 +187,32 @@ class _AddMealScreenState extends State<AddMealScreen> {
     }
   }
 
-  // ===================== 食材库 / 常用食物填充 =====================
+  /// 全屏预览当前图片（本地文件优先，其次网络链接）
+  Future<void> _openPreview() async {
+    if (_localImage != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ImageViewerScreen(
+            imageFile: _localImage,
+            title: '预览图片',
+          ),
+        ),
+      );
+      return;
+    }
+    final url = _imageUrl;
+    if (url == null || !url.startsWith('http')) {
+      if (mounted) showToast(context, '图片还没加载好，稍后再试');
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ImageViewerScreen(imageUrl: url, title: '预览图片'),
+      ),
+    );
+  }
 
+  // ===================== 食材库 / 常用食物填充 =====================
   /// 打开内置食材库，选中后自动填入名称、份量与营养数据
   Future<void> _openFoodDatabase() async {
     final picked = await Navigator.of(context).push<FoodPickResult>(
@@ -416,10 +441,20 @@ class _AddMealScreenState extends State<AddMealScreen> {
                   Positioned(
                     right: 8,
                     bottom: 8,
-                    child: FilledButton.tonalIcon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.edit, size: 16),
-                      label: const Text('更换'),
+                    child: Row(
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: _openPreview,
+                          icon: const Icon(Icons.zoom_out_map, size: 16),
+                          label: const Text('查看'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonalIcon(
+                          onPressed: _pickImage,
+                          icon: const Icon(Icons.edit, size: 16),
+                          label: const Text('更换'),
+                        ),
+                      ],
                     ),
                   ),
                 ],

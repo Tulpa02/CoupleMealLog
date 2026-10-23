@@ -153,8 +153,8 @@ class _RoomEntryScreenState extends State<RoomEntryScreen> {
               Text(
                 '免注册 · 用 6 位房间密钥和 TA 共享餐食记录',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.hintColor),
+                style:
+                    theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
               ),
               const SizedBox(height: 24),
 
@@ -263,7 +263,8 @@ class _RoomEntryScreenState extends State<RoomEntryScreen> {
               const SizedBox(height: 8),
               Text(
                 '环境 ID：${AppConfig.envId}',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                style:
+                    theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
               ),
             ],
           ),
@@ -351,8 +352,8 @@ class _SectionCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(subtitle,
-                style:
-                    theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.hintColor)),
             const SizedBox(height: 16),
             child,
           ],

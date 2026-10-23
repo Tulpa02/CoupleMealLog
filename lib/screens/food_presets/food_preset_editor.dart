@@ -101,7 +101,8 @@ class _FoodPresetEditorSheetState extends State<_FoodPresetEditorSheet> {
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
       ],
-      decoration: InputDecoration(labelText: label, suffixText: unit, isDense: true),
+      decoration:
+          InputDecoration(labelText: label, suffixText: unit, isDense: true),
     );
   }
 

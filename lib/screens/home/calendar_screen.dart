@@ -335,8 +335,8 @@ class _DaySectionState extends State<_DaySection> {
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(width: 6),
             Text(widget.date,
-                style:
-                    theme.textTheme.labelSmall?.copyWith(color: theme.hintColor)),
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.hintColor)),
             const Spacer(),
             IconButton(
               tooltip: '刷新',
@@ -367,10 +367,8 @@ class _DaySectionState extends State<_DaySection> {
   }
 
   List<Widget> _buildContent(ThemeData theme) {
-    final mine =
-        _all.where((e) => e.deviceId == widget.deviceId).toList();
-    final partner =
-        _all.where((e) => e.deviceId != widget.deviceId).toList();
+    final mine = _all.where((e) => e.deviceId == widget.deviceId).toList();
+    final partner = _all.where((e) => e.deviceId != widget.deviceId).toList();
 
     // 当天排序：按餐类型 + 时间
     int cmp(MealEntry a, MealEntry b) => a.sortKey.compareTo(b.sortKey);
@@ -390,8 +388,8 @@ class _DaySectionState extends State<_DaySection> {
           padding: const EdgeInsets.symmetric(vertical: 32),
           child: Center(
             child: Text('当天暂无餐食记录',
-                style:
-                    theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.hintColor)),
           ),
         ),
       for (final e in mine)

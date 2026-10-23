@@ -72,7 +72,8 @@ class FoodPresetService {
 
   Future<Map<String, dynamic>?> _getDoc(String docId) async {
     if (docId.isEmpty) return null;
-    final list = await TcbService.queryWhere(tableFood, {'_id': docId}, limit: 1);
+    final list =
+        await TcbService.queryWhere(tableFood, {'_id': docId}, limit: 1);
     return list.isEmpty ? null : list.first;
   }
 }

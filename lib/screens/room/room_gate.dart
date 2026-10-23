@@ -74,7 +74,8 @@ class _RoomGateState extends State<RoomGate> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('初始化失败：${friendlyError(_error!)}', textAlign: TextAlign.center),
+                Text('初始化失败：${friendlyError(_error!)}',
+                    textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton(onPressed: _bootstrap, child: const Text('重试')),
               ],
@@ -86,7 +87,9 @@ class _RoomGateState extends State<RoomGate> {
 
     final room = _room;
     final fallbackNickname = _nickname.isEmpty
-        ? (_deviceId.length > 6 ? _deviceId.substring(_deviceId.length - 6) : _deviceId)
+        ? (_deviceId.length > 6
+            ? _deviceId.substring(_deviceId.length - 6)
+            : _deviceId)
         : _nickname;
     if (room == null) {
       // 未加入房间 → 房间选择页，加入/创建成功后重新加载

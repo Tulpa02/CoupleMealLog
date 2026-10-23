@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
+import '../screens/meal/image_viewer_screen.dart';
 import '../utils/date_utils.dart';
 
 class MealCard extends StatelessWidget {
@@ -23,6 +24,22 @@ class MealCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
+  /// Hero 动画标识，同一列表内需唯一
+  String get _heroTag => 'meal-image-${entry.objectId}';
+
+  /// 打开全屏大图
+  void _openImage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ImageViewerScreen(
+          imageUrl: entry.imageUrl,
+          heroTag: _heroTag,
+          title: '${entry.foodName} · ${entry.type.label}',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -38,34 +55,48 @@ class MealCard extends StatelessWidget {
             // 左侧：图片或餐类型图标
             // 只有拿到有效 http 链接时才显示图片，否则退化为餐次图标
             if (entry.imageUrl != null && entry.imageUrl!.startsWith('http'))
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  entry.imageUrl!,
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.cover,
-                  // 按显示尺寸解码，降低内存占用
-                  cacheWidth: 192,
-                  loadingBuilder: (context, child, progress) => progress == null
-                      ? child
-                      : Container(
+              GestureDetector(
+                // 点击缩略图 → 全屏查看，可双指缩放 / 双击放大
+                onTap: () => _openImage(context),
+                child: Hero(
+                  tag: _heroTag,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      entry.imageUrl!,
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.cover,
+                      // 按显示尺寸解码，降低内存占用
+                      cacheWidth: 192,
+                      loadingBuilder: (context, child, progress) => progress ==
+                              null
+                          ? child
+                          : Container(
+                              width: 64,
+                              height: 64,
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            ),
+                      errorBuilder: (_, __, ___) => Tooltip(
+                        message: isMine
+                            ? '图片加载失败，下拉刷新试试'
+                            : '看不到伴侣的图片？请在云存储权限里选择「所有用户可读」',
+                        child: Container(
                           width: 64,
                           height: 64,
                           color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Center(
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
+                          child: Icon(entry.type.icon, size: 22, color: accent),
                         ),
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 64,
-                    height: 64,
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: Icon(entry.type.icon, size: 22, color: accent),
+                      ),
+                    ),
                   ),
                 ),
               )

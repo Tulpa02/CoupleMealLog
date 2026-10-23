@@ -72,8 +72,9 @@ class NumFmt {
   }
 
   /// 把数值转成输入框友好文本（去掉多余的 .0）
-  static String input(double v) =>
-      v == 0 ? '' : (v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString());
+  static String input(double v) => v == 0
+      ? ''
+      : (v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString());
 }
 
 /// 全局提示条（SnackBar）快捷方法
