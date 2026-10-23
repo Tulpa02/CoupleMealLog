@@ -2,6 +2,9 @@
 //
 // 展示：记录人标签、餐类型、时间、食物名称、份量、营养数据、图片；
 // 权限：只有本人的记录才显示「编辑 / 删除」操作（仅查看伴侣的记录）。
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
@@ -33,11 +36,110 @@ class MealCard extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => ImageViewerScreen(
           imageUrl: entry.imageUrl,
+          imageBase64: entry.imageThumb,
           heroTag: _heroTag,
           title: '${entry.foodName} · ${entry.type.label}',
         ),
       ),
     );
+  }
+
+  /// 左侧缩略图
+  ///
+  /// 优先级：云存储原图 → 数据库里的 Base64 缩略图 → 餐次图标。
+  /// 伴侣那台手机通常拿不到原图链接（云存储默认仅创建者可读），
+  /// 此时用缩略图兜底，保证「能看到对方的照片」。
+  Widget _buildThumb(BuildContext context, ThemeData theme, Color accent) {
+    const size = 64.0;
+    final thumb = entry.imageThumb;
+    final url = entry.imageUrl;
+
+    // 1. 没有原图也没有缩略图 → 餐次图标
+    if ((url == null || !url.startsWith('http')) &&
+        (thumb == null || thumb.isEmpty)) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(entry.type.icon, color: accent),
+      );
+    }
+
+    Widget fallback() {
+      if (thumb != null && thumb.isNotEmpty) {
+        return _memoryImage(thumb, size);
+      }
+      return Tooltip(
+        message: isMine ? '图片加载失败，下拉刷新试试' : '暂时看不到这张图片，下拉刷新试试',
+        child: Container(
+          width: size,
+          height: size,
+          color: theme.colorScheme.surfaceContainerHighest,
+          child: Icon(entry.type.icon, size: 22, color: accent),
+        ),
+      );
+    }
+
+    Widget image = (url != null && url.startsWith('http'))
+        ? Image.network(
+            url,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            cacheWidth: 192,
+            loadingBuilder: (context, child, progress) => progress == null
+                ? child
+                : Container(
+                    width: size,
+                    height: size,
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+            errorBuilder: (_, __, ___) => fallback(),
+          )
+        : _memoryImage(thumb!, size);
+
+    return GestureDetector(
+      // 点击缩略图 → 全屏查看，可双指缩放 / 双击放大
+      onTap: () => _openImage(context),
+      child: Hero(
+        tag: _heroTag,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: image,
+        ),
+      ),
+    );
+  }
+
+  /// Base64 缩略图
+  Widget _memoryImage(String base64Text, double size) {
+    try {
+      final bytes = base64Decode(base64Text);
+      return Image.memory(
+        Uint8List.fromList(bytes),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        cacheWidth: 192,
+      );
+    } catch (_) {
+      return Container(
+        width: size,
+        height: size,
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.image_not_supported_outlined, size: 20),
+      );
+    }
   }
 
   @override
@@ -53,63 +155,7 @@ class MealCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 左侧：图片或餐类型图标
-            // 只有拿到有效 http 链接时才显示图片，否则退化为餐次图标
-            if (entry.imageUrl != null && entry.imageUrl!.startsWith('http'))
-              GestureDetector(
-                // 点击缩略图 → 全屏查看，可双指缩放 / 双击放大
-                onTap: () => _openImage(context),
-                child: Hero(
-                  tag: _heroTag,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      entry.imageUrl!,
-                      width: 64,
-                      height: 64,
-                      fit: BoxFit.cover,
-                      // 按显示尺寸解码，降低内存占用
-                      cacheWidth: 192,
-                      loadingBuilder: (context, child, progress) => progress ==
-                              null
-                          ? child
-                          : Container(
-                              width: 64,
-                              height: 64,
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              ),
-                            ),
-                      errorBuilder: (_, __, ___) => Tooltip(
-                        message: isMine
-                            ? '图片加载失败，下拉刷新试试'
-                            : '看不到伴侣的图片？请在云存储权限里选择「所有用户可读」',
-                        child: Container(
-                          width: 64,
-                          height: 64,
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: Icon(entry.type.icon, size: 22, color: accent),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            else
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(entry.type.icon, color: accent),
-              ),
+            _buildThumb(context, theme, accent),
             const SizedBox(width: 12),
 
             // 右侧：文字信息

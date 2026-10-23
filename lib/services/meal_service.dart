@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import '../core/app_config.dart';
 import '../models/models.dart';
 import 'cache_service.dart';
+import 'image_thumb_service.dart';
 import 'tcb_service.dart';
 
 class MealService {
@@ -39,6 +40,20 @@ class MealService {
       'updateTime': now.toIso8601String(),
     };
     final id = await TcbService.add(tableMeal, data);
+
+    // 缩略图单独存 mealImage 集合（数据库权限两人都可读，
+    // 绕开云存储「所有用户可读」的付费限制）
+    final thumb = draft.imageThumb;
+    if (thumb != null && thumb.isNotEmpty) {
+      await ImageThumbService.instance.save(
+        mealId: id,
+        roomId: roomId,
+        date: draft.date,
+        deviceId: deviceId,
+        thumb: thumb,
+      );
+    }
+
     return MealEntry(
       objectId: id,
       roomId: roomId,
@@ -56,6 +71,7 @@ class MealService {
       imageUrl: draft.imageUrl,
       imageFileId: draft.imageFileId,
       imageUpdatedAt: draft.imageUpdatedAt,
+      imageThumb: thumb,
       createdAt: now,
     );
   }
@@ -73,6 +89,22 @@ class MealService {
     final data = updated.toFields()
       ..['updateTime'] = DateTime.now().toIso8601String();
     await TcbService.update(tableMeal, updated.objectId, data);
+
+    // 图片有变化时同步缩略图
+    final thumb = updated.imageThumb;
+    if (updated.imageFileId == null) {
+      // 图片被移除
+      await ImageThumbService.instance.deleteByMealId(updated.objectId);
+    } else if (thumb != null && thumb.isNotEmpty) {
+      await ImageThumbService.instance.save(
+        mealId: updated.objectId,
+        roomId: updated.roomId,
+        date: updated.date,
+        deviceId: deviceId,
+        thumb: thumb,
+      );
+    }
+
     await _refreshDayCache(updated.roomId, updated.date);
   }
 
@@ -83,6 +115,7 @@ class MealService {
   }) async {
     if (entry.deviceId != deviceId) throw Exception('只能删除本设备创建的记录');
     await TcbService.remove(tableMeal, entry.objectId);
+    await ImageThumbService.instance.deleteByMealId(entry.objectId);
     await _refreshDayCache(entry.roomId, entry.date);
   }
 
@@ -97,6 +130,7 @@ class MealService {
     );
     final list = docs.map(MealEntry.fromDoc).toList();
     await _fillImageUrls(list);
+    await _fillThumbs(list, roomId, from: date, to: date);
     _sort(list);
     await CacheService.instance.saveDay(roomId, date, list);
     return list;
@@ -126,6 +160,7 @@ class MealService {
         .map(MealEntry.fromDoc)
         .toList();
     await _fillImageUrls(list);
+    await _fillThumbs(list, roomId, from: from, to: to);
     list.sort((a, b) => b.sortKey.compareTo(a.sortKey));
     // 按天写入缓存
     final byDate = <String, List<MealEntry>>{};
@@ -150,6 +185,7 @@ class MealService {
     );
     final list = docs.map(MealEntry.fromDoc).toList();
     await _fillImageUrls(list);
+    await _fillThumbs(list, roomId, from: '', to: '9999-12-31');
     list.sort((a, b) => b.sortKey.compareTo(a.sortKey));
     return list;
   }
@@ -239,6 +275,31 @@ class MealService {
           debugPrint('获取图片链接失败（${chunk[k]}）：${TcbService.friendlyError(e)}');
         }
       }
+    }
+  }
+
+  /// 补上缩略图（Base64，来自 mealImage 集合）
+  ///
+  /// 只有「原图链接拿不到」的记录才需要缩略图，最常见的就是伴侣的记录：
+  /// 云存储默认「仅创建者可读写」，对方取不到签名链接。
+  Future<void> _fillThumbs(
+    List<MealEntry> list,
+    String roomId, {
+    required String from,
+    required String to,
+  }) async {
+    final need = list.where((e) => e.imageFileId != null).toList();
+    if (need.isEmpty) return;
+    final thumbs = await ImageThumbService.instance.fetchByRoom(
+      roomId,
+      from: from,
+      to: to,
+    );
+    if (thumbs.isEmpty) return;
+    for (var i = 0; i < list.length; i++) {
+      final thumb = thumbs[list[i].objectId];
+      if (thumb == null || thumb.isEmpty) continue;
+      list[i] = list[i].copyWith(imageThumb: thumb);
     }
   }
 

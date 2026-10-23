@@ -23,6 +23,11 @@ dependencies:
   path_provider: ^2.1.4 # 定位手机本地目录（CSV 导出、固定缓存位置）
   shared_preferences: ^2.3.2 # 本地缓存（离线查看）、设备 ID 与昵称
 
+  # ===== 纯 Dart 图片处理：把照片压成缩略图存数据库 =====
+  # 用途：云存储「所有用户可读」需要付费套餐，改用数据库存小缩略图
+  # （数据库免费额度 2GB，单张缩略图仅几十 KB），伴侣即可看到图片。
+  image: ^4.3.0
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

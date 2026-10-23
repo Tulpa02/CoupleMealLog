@@ -44,6 +44,9 @@ class AppConfig {
   static const String collectionMeal = 'mealRecord'; // 餐食记录
   static const String collectionFood = 'foodLibrary'; // 常用食物库
 
+  /// 图片缩略图（Base64 存数据库，绕开云存储付费权限）
+  static const String collectionImage = 'mealImage';
+
   /// 云存储目录前缀（图片）
   static const String storageDir = 'meal-images';
 

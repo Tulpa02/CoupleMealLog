@@ -98,6 +98,7 @@ App 启动时会自动调用 `signInAnonymously()`，安全规则里用 `auth.op
 | --- | --- | --- |
 | **room** | `roomCode`、`creatorDeviceId`、`createdAt`（旧版还有 `memberList`/`memberNames`） | 房间主体，只有创建者会写 |
 | **roomMember** | `roomId`、`roomCode`、`deviceId`、`nickname`、`createdAt` | **房间成员，每个设备一条** |
+| **mealImage** | `mealId`、`roomId`、`date`、`deviceId`、`thumb`（Base64 缩略图）、`updatedAt` | **图片缩略图**：绕开云存储付费权限，让伴侣也能看到照片 |
 | **mealRecord** | `roomId`、`deviceId`、`nickname`、`date`、`time`、`mealType`、`foodName`、`portion`、`calorie`、`protein`、`carb`、`fat`、`imageFileId`、`imageUpdatedAt`、`createdAt`、`updateTime` | 餐食记录 |
 | **foodLibrary** | `deviceId`、`foodName`、`portion`、`calorie`、`protein`、`carb`、`fat`、`createdAt` | 常用食物（仅本设备） |
 
@@ -122,6 +123,7 @@ App 启动时会自动调用 `signInAnonymously()`，安全规则里用 `auth.op
 | --- | --- |
 | `room` | 读取全部数据，修改本人数据 |
 | `roomMember` | 读取全部数据，修改本人数据 |
+| `mealImage` | 读取全部数据，修改本人数据 |
 | `mealRecord` | 读取全部数据，修改本人数据 |
 | `foodLibrary` | 读取和修改本人数据 |
 
@@ -246,15 +248,19 @@ adb install -r build\app\outputs\flutter-apk\app-release.apk
 | 加入房间提示「加入失败」 | 多半是没建 `roomMember` 集合（见第四节第 3 步） |
 | **拍了照但记录里没有图片** | 已修复：清单里【不能】声明 `CAMERA` 权限，否则系统相机会拒绝并把结果返回空。见下方说明 |
 | 图片上传成功但列表不显示 | 云存储权限没放开（选「所有用户可读」）；链接过期会进页面自动重换 |
-| **自己能看到图片，伴侣看不到（反之亦然）** | **云存储权限**：默认是「仅创建者可读写」，每台设备的匿名 openid 不同，所以对方取不到下载链接。改成「**所有用户可读，仅创建者可写**」即可 |
+| **自己能看到图片，伴侣看不到（反之亦然）** | 默认云存储权限是「仅创建者可读写」，对方取不到签名链接。**两条路**：① 云存储权限改「所有用户可读」（**需付费套餐**）；② **本项目的默认方案**：不花钱，改用数据库里存的缩略图（见下方说明） |
 | 伴侣看不到我的记录 | 两台设备是否在同一个房间（设置页看 6 位密钥是否一致） |
 | 网络超时 | 环境地域需为「上海」；检查手机网络 |
 
-> **关于「对方看不到我的图片」**（最常见问题）：
-> 云开发控制台 → **云存储 → 权限设置** → 选「**所有用户可读，仅创建者可读写**」（如果没有这一项，选「所有用户可读，仅创建者可写」或最宽松的「所有用户可读写」）。
-> 原因：图片下载链接是按**请求者身份**签发的，两台手机的匿名 openid 不同，
-> 在「仅创建者可读写」下，对方拿不到签名链接，App 就只能显示占位图标。
-> App 内长按该占位图标会给出同样提示。
+> **图片跨设备可见（免费方案）**：
+> 云存储「所有用户可读」属于付费能力，所以本项目额外做了一层兜底：
+> 拍照保存时，在本机把图片压成 **最长边 480px 的 JPEG**，转 Base64 存进 **`mealImage` 集合**（单张约 30~50KB，远低于单文档 512KB 上限）。
+> 数据库权限「读取全部数据」两人都能读，于是：
+> - 自己：优先显示云存储原图（清晰）；
+> - 伴侣：取不到原图链接时，自动回退显示数据库里的缩略图（能看清吃了什么）。
+>
+> 数据量参考：数据库免费额度约 2GB，按 40KB/张算可存约 5 万张照片。
+> 如果想彻底避免这份额外开销，也可以去控制台把云存储权限改成「所有用户可读」（付费），App 会自动优先用原图。
 
 > **关于相机权限**：`android/app/src/main/AndroidManifest.xml` 里**不要**写
 > `<uses-permission android:name="android.permission.CAMERA"/>`。

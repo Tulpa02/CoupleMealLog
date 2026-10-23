@@ -170,8 +170,9 @@ class CacheService {
   Map<String, dynamic> _toJson(MealEntry e) => {
         ...e.toFields(),
         '_id': e.objectId,
-        // 缓存里额外保留图片链接，离线时也能显示已加载过的图片
+        // 缓存里额外保留图片链接与缩略图，离线时也能显示已加载过的图片
         'imageUrl': e.imageUrl,
+        'imageThumb': e.imageThumb,
         'createdAt': e.createdAt?.toIso8601String(),
       };
 }

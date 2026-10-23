@@ -15,6 +15,7 @@ import '../../models/meal_type.dart';
 import '../../models/models.dart';
 import '../../services/food_preset_service.dart';
 import '../../services/image_service.dart';
+import '../../services/image_thumb_service.dart';
 import '../../services/meal_service.dart';
 import '../../services/tcb_service.dart';
 import '../../utils/date_utils.dart';
@@ -58,6 +59,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
   File? _localImage; // 新选择的本地图片
   String? _imageUrl; // 已上传图片地址（编辑时可能已有）
   String? _imageFileId; // 已上传图片对应的云存储 fileID
+  String? _imageThumb; // 缩略图 Base64（存数据库，供伴侣查看）
   bool _removeImage = false; // 编辑时删除原图片
 
   bool _saving = false;
@@ -80,6 +82,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
       _fatCtrl.text = NumFmt.input(e.fat);
       _imageUrl = e.imageUrl;
       _imageFileId = e.imageFileId;
+      _imageThumb = e.imageThumb;
       // 编辑时如果没有可用链接但有 fileID，异步换一个新链接用于预览
       if ((_imageUrl == null || !_imageUrl!.startsWith('http')) &&
           _imageFileId != null) {
@@ -315,7 +318,11 @@ class _AddMealScreenState extends State<AddMealScreen> {
       // 1. 处理图片：有新图片则上传到云开发云存储；删除图片则清理云端文件
       var url = _removeImage ? null : _imageUrl;
       var fileId = _removeImage ? null : _imageFileId;
+      // 缩略图：新图必生成；编辑时没换图则沿用旧的
+      var thumb = _removeImage ? null : _imageThumb;
       if (_localImage != null) {
+        // 先生成缩略图（存数据库，伴侣靠它看到照片，不受云存储权限影响）
+        thumb = await ImageThumbService.instance.buildThumbBase64(_localImage!);
         // uploadMealImage 返回的是 (fileID, 临时访问链接)，注意顺序
         final (newFileId, newUrl) = await ImageService.instance.uploadMealImage(
           roomId: widget.roomId,
@@ -350,9 +357,10 @@ class _AddMealScreenState extends State<AddMealScreen> {
         imageUpdatedAt:
             fileId == null ? null : DateTime.now().millisecondsSinceEpoch,
         // 注意：imageUrl 只是「当前这一次」的临时链接，读取时会重新换取；
-        // 真正持久化的是 imageFileId。
+        // 真正持久化的是 imageFileId；缩略图存 mealImage 集合。
         imageUrl: url,
         imageFileId: fileId,
+        imageThumb: thumb,
       );
 
       // 3. 写入云开发集合 mealRecord

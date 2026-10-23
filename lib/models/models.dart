@@ -111,6 +111,7 @@ class MealEntry {
     this.imageUrl,
     this.imageFileId,
     this.imageUpdatedAt,
+    this.imageThumb,
     this.createdAt,
     this.updatedAt,
   });
@@ -131,6 +132,13 @@ class MealEntry {
   final String? imageUrl; // 云存储图片的临时链接
   final String? imageFileId; // 云存储 fileID（cloud://...，删除记录时清理）
   final int? imageUpdatedAt; // 图片上传时间戳，用于缓存刷新临时链接
+
+  /// 缩略图（Base64，存在 mealImage 集合里，运行时填充，不写回 mealRecord）
+  ///
+  /// 用途：云存储「所有用户可读」需要付费，伴侣取不到原图链接时，
+  /// 用这张小图兜底显示。
+  final String? imageThumb;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -177,6 +185,7 @@ class MealEntry {
       imageUpdatedAt: data['imageUpdatedAt'] is num
           ? (data['imageUpdatedAt'] as num).toInt()
           : null,
+      imageThumb: data['imageThumb']?.toString(),
       createdAt: toDate(data['createdAt']),
       updatedAt: toDate(data['updateTime']),
     );
@@ -217,6 +226,7 @@ class MealEntry {
     String? imageUrl,
     String? imageFileId,
     int? imageUpdatedAt,
+    String? imageThumb,
   }) =>
       MealEntry(
         objectId: objectId,
@@ -235,6 +245,7 @@ class MealEntry {
         imageUrl: imageUrl ?? this.imageUrl,
         imageFileId: imageFileId ?? this.imageFileId,
         imageUpdatedAt: imageUpdatedAt ?? this.imageUpdatedAt,
+        imageThumb: imageThumb ?? this.imageThumb,
         createdAt: createdAt,
         updatedAt: updatedAt,
       );
