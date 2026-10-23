@@ -109,7 +109,9 @@ class DailySummaryCard extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: highlight
                   ? theme.colorScheme.primary
-                  : Colors.orange.shade700,
+                  : (theme.brightness == Brightness.dark
+                      ? Colors.orange.shade300
+                      : Colors.orange.shade700),
             ),
           ),
         ),

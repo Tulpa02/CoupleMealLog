@@ -5,6 +5,10 @@
 //   不同步到数据库，两台设备可以各自设置成不同的样子；
 // - 自定义背景图会被复制到应用私有目录，避免用户从相册删除后失效；
 // - 提供变更通知，界面可实时刷新，无需重启。
+//
+// 明暗联动：
+// 背景是深色时，整个 App 自动切到深色主题（白字、深色卡片），
+// 这样「深色背景 + 浅色卡片」不会显得刺眼，也避免文字看不清。
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -28,6 +32,7 @@ class BgPreset {
   const BgPreset({
     required this.name,
     required this.colors,
+    this.isDark = false,
   });
 
   final String name;
@@ -35,13 +40,21 @@ class BgPreset {
   /// 1 个颜色 = 纯色；2 个颜色 = 渐变
   final List<Color> colors;
 
+  /// 是否为深色系（决定分组展示，明暗由亮度自动判定）
+  final bool isDark;
+
   Color get primary => colors.first;
 
   bool get isGradient => colors.length > 1;
+
+  /// 平均亮度，用于自动判断明暗
+  double get luminance =>
+      colors.map((c) => c.computeLuminance()).reduce((a, b) => a + b) /
+      colors.length;
 }
 
-/// 内置背景预设（柔和、低饱和，保证文字可读）
-const List<BgPreset> kBgPresets = [
+/// 浅色系预设（白天、明亮）
+const List<BgPreset> kBgPresetsLight = [
   BgPreset(name: '樱花粉', colors: [Color(0xFFFFF1F5)]),
   BgPreset(name: '奶油白', colors: [Color(0xFFFFFBF5)]),
   BgPreset(name: '薄荷绿', colors: [Color(0xFFF0FAF5)]),
@@ -54,6 +67,39 @@ const List<BgPreset> kBgPresets = [
   BgPreset(name: '暮色', colors: [Color(0xFFF5F0FF), Color(0xFFFFF0F6)]),
 ];
 
+/// 深色系预设（夜间、护眼，自动启用深色主题）
+const List<BgPreset> kBgPresetsDark = [
+  BgPreset(name: '深空蓝', colors: [Color(0xFF1B2838)], isDark: true),
+  BgPreset(name: '墨绿', colors: [Color(0xFF1C2B24)], isDark: true),
+  BgPreset(name: '暗夜紫', colors: [Color(0xFF241C33)], isDark: true),
+  BgPreset(name: '炭灰', colors: [Color(0xFF202124)], isDark: true),
+  BgPreset(name: '深咖', colors: [Color(0xFF2B211C)], isDark: true),
+  BgPreset(name: '酒红', colors: [Color(0xFF2E1B22)], isDark: true),
+  BgPreset(
+    name: '深海',
+    colors: [Color(0xFF17233A), Color(0xFF0F1A2B)],
+    isDark: true,
+  ),
+  BgPreset(
+    name: '暮紫',
+    colors: [Color(0xFF2A1E38), Color(0xFF1A1526)],
+    isDark: true,
+  ),
+  BgPreset(
+    name: '森林',
+    colors: [Color(0xFF16261E), Color(0xFF0F1C16)],
+    isDark: true,
+  ),
+  BgPreset(
+    name: '午夜',
+    colors: [Color(0xFF14161A), Color(0xFF1E2230)],
+    isDark: true,
+  ),
+];
+
+/// 全部预设（浅色 + 深色）
+const List<BgPreset> kBgPresets = [...kBgPresetsLight, ...kBgPresetsDark];
+
 class AppearanceService {
   AppearanceService._();
 
@@ -63,6 +109,7 @@ class AppearanceService {
   static const String _keyColor = 'appearance_bg_color';
   static const String _keyColorEnd = 'appearance_bg_color_end';
   static const String _keyImage = 'appearance_bg_image';
+  static const String _keyImageDim = 'appearance_bg_image_dim';
   static const String _keySeed = 'appearance_seed_color';
 
   /// 背景样式
@@ -77,6 +124,9 @@ class AppearanceService {
   /// 自定义背景图（已复制到应用私有目录）
   String? _imagePath;
 
+  /// 图片背景的暗度（0~0.85，越大越暗）
+  double _imageDim = 0.55;
+
   /// 主题种子色（影响按钮、图标等强调色）
   Color _seedColor = const Color(0xFFE91E63);
 
@@ -84,7 +134,21 @@ class AppearanceService {
   Color get color => _color;
   Color get colorEnd => _colorEnd;
   String? get imagePath => _imagePath;
+  double get imageDim => _imageDim;
   Color get seedColor => _seedColor;
+
+  /// 背景是否为深色（决定整个 App 用深色还是浅色主题）
+  ///
+  /// - 图片背景：统一按深色处理（叠加黑色蒙层，白字可读，类似微信深色背景）
+  /// - 纯色 / 渐变：按实际亮度判断
+  bool get isDarkBackground {
+    if (_style == BgStyle.image) return true;
+    if (_style == BgStyle.gradient) {
+      return (_color.computeLuminance() + _colorEnd.computeLuminance()) / 2 <
+          0.35;
+    }
+    return _color.computeLuminance() < 0.35;
+  }
 
   /// 变更监听（页面注册后可在设置变化时立即刷新）
   final List<VoidCallback> _listeners = [];
@@ -114,6 +178,8 @@ class AppearanceService {
     if (colorEndValue != null) _colorEnd = Color(colorEndValue);
     final seed = prefs.getInt(_keySeed);
     if (seed != null) _seedColor = Color(seed);
+    final dim = prefs.getDouble(_keyImageDim);
+    if (dim != null) _imageDim = dim.clamp(0.0, 0.85);
     _imagePath = prefs.getString(_keyImage);
 
     // 图片被系统清理或用户手动删除时回退到纯色
@@ -175,6 +241,13 @@ class AppearanceService {
     _notify();
   }
 
+  /// 调整图片背景的暗度（0 = 原图，0.85 = 很暗）
+  Future<void> setImageDim(double value) async {
+    _imageDim = value.clamp(0.0, 0.85);
+    await _persist();
+    _notify();
+  }
+
   /// 清除自定义背景图
   Future<void> clearImage() async {
     await _deleteImageFile();
@@ -208,6 +281,7 @@ class AppearanceService {
     await prefs.setInt(_keyColor, _color.toARGB32());
     await prefs.setInt(_keyColorEnd, _colorEnd.toARGB32());
     await prefs.setInt(_keySeed, _seedColor.toARGB32());
+    await prefs.setDouble(_keyImageDim, _imageDim);
     if (_imagePath == null) {
       await prefs.remove(_keyImage);
     } else {

@@ -2,7 +2,8 @@
 //
 // 功能：
 // - 主题强调色（影响按钮、选中态等）；
-// - 背景：预设纯色 / 预设渐变 / 自定义颜色 / 自定义图片；
+// - 背景：浅色预设 / 深色预设 / 自定义颜色 / 自定义图片；
+// - 图片背景可调暗度（像微信深色背景那样压暗，白字更清晰）；
 // - 自定义背景图只保存在本机，不上传数据库。
 import 'package:flutter/material.dart';
 
@@ -58,13 +59,15 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
         return;
       }
       await _app.setImage(file);
-      if (mounted) showToast(context, '背景已更换');
+      if (mounted) showToast(context, '背景已更换，可拖动滑块调整明暗');
     } catch (e) {
       if (mounted) showToast(context, '设置背景失败：$e', isError: true);
     }
   }
 
-  /// 自定义纯色（HSV 取色，比调色板更自由）
+  /// 自定义纯色 / 渐变
+  ///
+  /// [asGradient] true = 选渐变结束色；false = 选纯色
   Future<void> _pickCustomColor({required bool asGradient}) async {
     final base = asGradient ? _app.colorEnd : _app.color;
     var hsv = HSVColor.fromColor(base);
@@ -86,6 +89,17 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Theme.of(ctx).dividerColor),
                     ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      hsv.toColor().computeLuminance() < 0.35
+                          ? '深色（自动白字）'
+                          : '浅色（自动深字）',
+                      style: TextStyle(
+                        color: hsv.toColor().computeLuminance() < 0.35
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   // 色相
@@ -106,10 +120,10 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
                       () => hsv = hsv.withSaturation(v),
                     ),
                   ),
-                  // 明度（背景色限制在较高区间，保证文字可读）
+                  // 明度：放开到很低，方便调出深色背景
                   Slider(
                     value: hsv.value,
-                    min: 0.75,
+                    min: 0.06,
                     label: '明度 ${(hsv.value * 100).round()}%',
                     onChanged: (v) => setDialogState(
                       () => hsv = hsv.withValue(v),
@@ -165,27 +179,16 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
           ),
           const SizedBox(height: 24),
 
-          // ===== 预设背景 =====
-          _sectionTitle(theme, '预设背景', '点击立即生效'),
+          // ===== 浅色背景 =====
+          _sectionTitle(theme, '浅色背景', '明亮清爽，适合白天'),
           const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: kBgPresets.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.35,
-            ),
-            itemBuilder: (context, i) {
-              final preset = kBgPresets[i];
-              return _PresetTile(
-                preset: preset,
-                onTap: () => _app.applyPreset(preset),
-              );
-            },
-          ),
+          _presetGrid(kBgPresetsLight),
+          const SizedBox(height: 24),
+
+          // ===== 深色背景 =====
+          _sectionTitle(theme, '深色背景', '护眼，自动切换深色主题'),
+          const SizedBox(height: 8),
+          _presetGrid(kBgPresetsDark),
           const SizedBox(height: 24),
 
           // ===== 自定义 =====
@@ -198,6 +201,7 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
                 ListTile(
                   leading: const Icon(Icons.colorize_outlined),
                   title: const Text('自定义纯色背景'),
+                  subtitle: const Text('可调到很暗，自动配白字'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _pickCustomColor(asGradient: false),
                 ),
@@ -216,8 +220,44 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _pickBackground,
                 ),
+
+                // 图片暗度调节（只在有背景图时出现）
                 if (_app.imagePath != null) ...[
                   const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.brightness_6_outlined, size: 20),
+                            const SizedBox(width: 12),
+                            const Text('背景暗度'),
+                            const Spacer(),
+                            Text(
+                              '${(_app.imageDim * 100).round()}%',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Slider(
+                          value: _app.imageDim,
+                          max: 0.85,
+                          divisions: 17,
+                          label: '${(_app.imageDim * 100).round()}%',
+                          onChanged: (v) => _app.setImageDim(v),
+                        ),
+                        Text(
+                          '往右拖动让背景更暗、白字更清晰（推荐 45% 以上）',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: theme.hintColor),
+                        ),
+                      ],
+                    ),
+                  ),
                   ListTile(
                     leading: Icon(Icons.delete_outline,
                         color: theme.colorScheme.error),
@@ -243,6 +283,28 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  /// 预设背景网格
+  Widget _presetGrid(List<BgPreset> presets) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: presets.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.35,
+      ),
+      itemBuilder: (context, i) {
+        final preset = presets[i];
+        return _PresetTile(
+          preset: preset,
+          onTap: () => _app.applyPreset(preset),
+        );
+      },
     );
   }
 
@@ -312,6 +374,11 @@ class _PresetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 深色预设用白字，浅色预设用深字
+    final textColor = preset.luminance < 0.35
+        ? Colors.white.withValues(alpha: 0.85)
+        : Colors.black.withValues(alpha: 0.7);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -331,9 +398,7 @@ class _PresetTile extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           preset.name,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-          ),
+          style: theme.textTheme.labelMedium?.copyWith(color: textColor),
         ),
       ),
     );
@@ -355,7 +420,7 @@ class _PreviewCard extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                color: theme.colorScheme.primary.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.restaurant, color: theme.colorScheme.primary),

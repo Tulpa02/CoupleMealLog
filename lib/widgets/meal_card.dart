@@ -136,7 +136,7 @@ class MealCard extends StatelessWidget {
       return Container(
         width: size,
         height: size,
-        color: Colors.grey.shade300,
+        color: Colors.black.withValues(alpha: 0.12),
         child: const Icon(Icons.image_not_supported_outlined, size: 20),
       );
     }
@@ -145,7 +145,11 @@ class MealCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = isMine ? theme.colorScheme.primary : Colors.orange.shade700;
+    // 深色主题下用浅橙，保证对比度
+    final partnerColor = theme.brightness == Brightness.dark
+        ? Colors.orange.shade300
+        : Colors.orange.shade700;
+    final accent = isMine ? theme.colorScheme.primary : partnerColor;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       clipBehavior: Clip.antiAlias,

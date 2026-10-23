@@ -1,7 +1,11 @@
 // 应用背景装饰层
 //
-// 把当前外观设置（纯色 / 渐变 / 自定义图片）渲染成背景，
-// 图片背景会自动叠加一层白色半透明蒙层，保证前景文字始终清晰可读。
+// 把当前外观设置（纯色 / 渐变 / 自定义图片）渲染成背景。
+//
+// 明暗处理：
+// - 深色背景（或图片背景）叠加**黑色**蒙层，整体压暗，白字清晰，
+//   效果类似微信深色背景；
+// - 浅色背景不叠加蒙层，保持清爽。
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,14 +16,10 @@ class AppBackground extends StatelessWidget {
   const AppBackground({
     super.key,
     required this.child,
-    this.dim = 0.55,
   });
 
   /// 前景内容
   final Widget child;
-
-  /// 图片背景的白色蒙层不透明度（0~1，越大越淡）
-  final double dim;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +30,7 @@ class AppBackground extends StatelessWidget {
     switch (app.style) {
       case BgStyle.solid:
         backdrop = ColoredBox(color: app.color);
+
       case BgStyle.gradient:
         backdrop = DecoratedBox(
           decoration: BoxDecoration(
@@ -40,6 +41,7 @@ class AppBackground extends StatelessWidget {
             ),
           ),
         );
+
       case BgStyle.image:
         final path = app.imagePath;
         if (path == null) {
@@ -56,9 +58,9 @@ class AppBackground extends StatelessWidget {
                 errorBuilder: (_, __, ___) =>
                     ColoredBox(color: theme.colorScheme.surface),
               ),
-              // 白色蒙层：保证卡片与文字可读
+              // 黑色蒙层：把照片压暗，白字清晰（微信深色背景同款处理）
               ColoredBox(
-                color: Colors.white.withValues(alpha: dim),
+                color: Colors.black.withValues(alpha: app.imageDim),
               ),
             ],
           );

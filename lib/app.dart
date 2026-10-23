@@ -5,6 +5,9 @@
 //
 // 外观：主题色与背景由 AppearanceService 提供，用户可在设置页更换，
 // 修改后整个 App 立即刷新，无需重启。
+//
+// 明暗联动：背景是深色（含图片背景）时自动使用深色主题，
+// 卡片、导航栏、文字颜色一起变深/变白，避免「深背景 + 白卡片」刺眼。
 import 'package:flutter/material.dart';
 
 import 'core/appearance_service.dart';
@@ -27,7 +30,7 @@ class _CoupleMealLogAppState extends State<CoupleMealLogApp> {
   @override
   void initState() {
     super.initState();
-    // 外观变化时重建 MaterialApp（主题色随之更新）
+    // 外观变化时重建 MaterialApp（主题色 / 明暗随之更新）
     _appearance.addListener(_onAppearanceChanged);
   }
 
@@ -43,49 +46,56 @@ class _CoupleMealLogAppState extends State<CoupleMealLogApp> {
 
   /// 构建主题
   ///
-  /// 卡片 / 导航栏使用半透明表面色，这样自定义背景图能透出来，
-  /// 同时保证文字对比度。
-  ThemeData _buildTheme(Brightness brightness) {
+  /// [isDarkBg] 为 true 时返回深色主题：卡片半透明深色、文字自动变白。
+  ThemeData _buildTheme({required bool isDarkBg}) {
+    final brightness = isDarkBg ? Brightness.dark : Brightness.light;
     final scheme = ColorScheme.fromSeed(
       seedColor: _appearance.seedColor,
       brightness: brightness,
     );
-    final isLight = brightness == Brightness.light;
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      brightness: brightness,
+      // 背景由 AppBackground 绘制，页面本身透明
+      scaffoldBackgroundColor: Colors.transparent,
       // 安卓手机上使用更紧凑的视觉密度，列表能显示更多信息
       visualDensity: VisualDensity.compact,
-      scaffoldBackgroundColor: Colors.transparent,
       appBarTheme: AppBarTheme(
         centerTitle: false,
-        backgroundColor: isLight
-            ? Colors.white.withValues(alpha: 0.72)
-            : scheme.surface.withValues(alpha: 0.72),
+        backgroundColor: isDarkBg
+            ? Colors.black.withValues(alpha: 0.28)
+            : Colors.white.withValues(alpha: 0.72),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0.5,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: isLight
-            ? Colors.white.withValues(alpha: 0.78)
-            : scheme.surfaceContainer.withValues(alpha: 0.78),
+        color: isDarkBg
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.78),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: isLight
-            ? Colors.white.withValues(alpha: 0.82)
-            : scheme.surfaceContainer.withValues(alpha: 0.82),
+        backgroundColor: isDarkBg
+            ? Colors.black.withValues(alpha: 0.42)
+            : Colors.white.withValues(alpha: 0.82),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        indicatorColor: scheme.primaryContainer,
+        indicatorColor: isDarkBg
+            ? scheme.primary.withValues(alpha: 0.32)
+            : scheme.primaryContainer,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primaryContainer,
-        foregroundColor: scheme.onPrimaryContainer,
+        backgroundColor: isDarkBg
+            ? scheme.primary.withValues(alpha: 0.85)
+            : scheme.primaryContainer,
+        foregroundColor:
+            isDarkBg ? scheme.onPrimary : scheme.onPrimaryContainer,
         elevation: 2,
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -94,9 +104,15 @@ class _CoupleMealLogAppState extends State<CoupleMealLogApp> {
         ),
         isDense: true,
         filled: true,
-        fillColor: isLight
-            ? Colors.white.withValues(alpha: 0.7)
-            : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        fillColor: isDarkBg
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.7),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: isDarkBg ? const Color(0xFF23262B) : scheme.surface,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: isDarkBg ? const Color(0xFF1E2126) : scheme.surface,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -113,13 +129,16 @@ class _CoupleMealLogAppState extends State<CoupleMealLogApp> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkBg = _appearance.isDarkBackground;
+    final theme = _buildTheme(isDarkBg: isDarkBg);
+
     return MaterialApp(
       title: '饱饱日记',
       navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
-      // 全局背景层：所有页面（含对话框、底部弹窗）共享同一张背景
+      theme: theme,
+      // 强制使用当前主题（不跟随系统），否则系统浅色时深色背景会配浅色主题
+      themeMode: ThemeMode.light,
       builder: (context, child) => AppBackground(
         child: child ?? const SizedBox.shrink(),
       ),
