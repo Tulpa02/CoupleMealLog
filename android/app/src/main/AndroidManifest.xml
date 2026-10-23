@@ -10,7 +10,7 @@
     -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
-        android:label="情侣餐记"
+        android:label="饱饱日记"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -90,11 +90,9 @@ class _HomeShellState extends State<HomeShell> {
             Icon(Icons.favorite,
                 size: 18, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                '情侣餐记 · 房间 ${_room.roomCode}',
-                overflow: TextOverflow.ellipsis,
-              ),
+            // 房间号不在这里展示（设置页可查看），保持标题简洁
+            const Flexible(
+              child: Text('饱饱日记', overflow: TextOverflow.ellipsis),
             ),
           ],
         ),

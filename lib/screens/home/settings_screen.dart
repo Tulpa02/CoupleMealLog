@@ -19,6 +19,7 @@ import '../../services/meal_service.dart';
 import '../../services/room_service.dart';
 import '../../utils/date_utils.dart';
 import '../food_presets/food_presets_screen.dart';
+import 'appearance_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -216,6 +217,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 12),
 
+        // ===== 外观 =====
+        Card(
+          margin: EdgeInsets.zero,
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.palette_outlined),
+                title: const Text('背景与主题'),
+                subtitle: const Text('更换背景颜色、渐变或自定义图片（仅本机生效）'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AppearanceScreen(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
         // ===== 房间 =====
         Card(
           margin: EdgeInsets.zero,
@@ -306,7 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 16),
         Center(
           child: Text(
-            '情侣餐记 CoupleMealLog v1.1.0\n'
+            '饱饱日记 v1.3.0\n'
             '数据存储于微信云开发 / 腾讯 CloudBase，免注册模式',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),

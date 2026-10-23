@@ -144,7 +144,7 @@ class _RoomEntryScreenState extends State<RoomEntryScreen> {
               Icon(Icons.favorite, size: 56, color: theme.colorScheme.primary),
               const SizedBox(height: 8),
               Text(
-                '情侣餐记',
+                '饱饱日记',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineSmall
                     ?.copyWith(fontWeight: FontWeight.bold),

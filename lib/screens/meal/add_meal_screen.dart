@@ -176,7 +176,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
         if (mounted) {
           showToast(
             context,
-            source == 'camera' ? '没有拿到照片：请检查系统设置里是否允许「情侣餐记」使用相机' : '没有选择照片',
+            source == 'camera' ? '没有拿到照片：请检查系统设置里是否允许「饱饱日记」使用相机' : '没有选择照片',
           );
         }
         return;

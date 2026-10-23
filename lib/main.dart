@@ -1,17 +1,26 @@
-// CoupleMealLog 应用入口
+// 饱饱日记 应用入口
 //
 // 启动流程：
 // 1. 异步初始化云开发环境（环境 ID 见 core/app_config.dart）；
-// 2. 启动 MaterialApp：免注册模式，直接进入「房间选择页」
+// 2. 读取本机外观设置（背景色 / 背景图 / 主题色）；
+// 3. 启动 MaterialApp：免注册模式，直接进入「房间选择页」
 //    （已加入过房间的设备会直接进入首页）。
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'core/appearance_service.dart';
 import 'services/tcb_service.dart';
 
 Future<void> main() async {
   // 绑定 Flutter 引擎，确保在 runApp 之前可以安全调用插件
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 读取外观设置（失败时用默认粉色主题）
+  try {
+    await AppearanceService.instance.load();
+  } catch (e) {
+    debugPrint('读取外观设置失败：$e');
+  }
 
   // 初始化云开发（数据库 + 云存储 + 匿名登录共用同一个环境）
   try {
